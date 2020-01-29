@@ -2866,12 +2866,13 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
 </script><title>keechma-graph-data -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://example.com/FIXME">keechma-graph-data</a></h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br /><p>Example application that renders the graph data</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.7.0</td></tr><tr><td class="dep-name">org.clojure/clojurescript</td><td class="dotted"><hr /></td><td class="dep-version">1.7.170</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.2.374</td></tr><tr><td class="dep-name">keechma</td><td class="dotted"><hr /></td><td class="dep-version">0.1.0-SNAPSHOT</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#keechma-graph-data.core">keechma-graph-data.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#keechma-graph-data.core" name="keechma-graph-data.core"><h1 class="project-name">keechma-graph-data.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.10.1</td></tr><tr><td class="dep-name">org.clojure/clojurescript</td><td class="dotted"><hr /></td><td class="dep-version">1.10.597</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.7.559</td></tr><tr><td class="dep-name">keechma</td><td class="dotted"><hr /></td><td class="dep-version">0.3.14</td></tr><tr><td class="dep-name">keechma/entitydb</td><td class="dotted"><hr /></td><td class="dep-version">0.1.6</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#keechma-graph-data.core">keechma-graph-data.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#keechma-graph-data.core" name="keechma-graph-data.core"><h1 class="project-name">keechma-graph-data.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns keechma-graph-data.core
-  (:require [keechma.controller :as controller]
-            [keechma.edb :as edb]
-            [keechma.ui-component :as ui]
-            [keechma.app-state :as app-state])
+  (:require [clojure.string :as str]
+            [entitydb.core :as edb]
+            [keechma.app-state :as app-state]
+            [keechma.controller :as controller]
+            [keechma.ui-component :as ui])
   (:require-macros [reagent.ratom :refer [reaction]]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(enable-console-print!)</pre></td></tr><tr><td class="docs"><p>Define the initial graph data</p>
 </td><td class="codes"><pre class="brush: clojure">(def user-data
@@ -2891,25 +2892,24 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(def schema
   {:users {:id :id
            :relations {:favorite-users [:many :users]}}})</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defrecord DataController []
-  controller/IController
-  (params [_ _] true)
-  (start [_ _ app-db]
-    ;; Inserts the data into the application state
-    (edb/insert-collection schema app-db :users :list (process-user-data user-data))))</pre></td></tr><tr><td class="docs"><p>Get the user list from the app state</p>
+</td><td class="codes"><pre class="brush: clojure">(defrecord DataController [])</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod controller/start DataController
+  [_ _ app-db]
+  ;; Inserts the data into the application state
+  (edb/insert-collection schema app-db :users :list (process-user-data user-data)))</pre></td></tr><tr><td class="docs"><p>Get the user list from the app state</p>
 </td><td class="codes"><pre class="brush: clojure">(defn user-list
   [app-db]
   (reaction
    (edb/get-collection schema @app-db :users :list)))</pre></td></tr><tr><td class="docs"><p>Renders one user and a list of it's favorite users.</p>
 
 <p>  <code>(:favorite-users user)</code> returns a function which will return
-  the list of favorite users for a user. This allows EntityDB to 
+  the list of favorite users for a user. This allows EntityDB to
   handle circular relations.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn user-renderer
   [user]
   [:tr {:key (:id user)}
    [:td (:username user)]
-   [:td (clojure.string/join &quot;, &quot; (map #(:username %) ((:favorite-users user))))]])</pre></td></tr><tr><td class="docs"><p>Render the list of users. Each user is rendered by the <code>user-renderer</code>
+   [:td (str/join &quot;, &quot; (map #(:username %) ((:favorite-users user))))]])</pre></td></tr><tr><td class="docs"><p>Render the list of users. Each user is rendered by the <code>user-renderer</code>
   function.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn user-list-renderer
   [ctx]
@@ -2929,8 +2929,8 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(def app-definition {:controllers {:data (-&gt;DataController)}
                      :subscriptions {:user-list user-list}
                      :components {:main user-list-component}
-          :html-element (.getElementById js/document &quot;app&quot;)})</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defonce running-app (clojure.core/atom))</pre></td></tr><tr><td class="docs"><p>Helper function that starts the application.</p>
+                     :html-element (.getElementById js/document &quot;app&quot;)})</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defonce running-app (clojure.core/atom nil))</pre></td></tr><tr><td class="docs"><p>Helper function that starts the application.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn start-app!
   []
   (reset! running-app (app-state/start! app-definition)))</pre></td></tr><tr><td class="docs"><p>Helper function that restarts the application whenever the

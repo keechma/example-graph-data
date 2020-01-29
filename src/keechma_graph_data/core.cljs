@@ -1,8 +1,9 @@
 (ns keechma-graph-data.core
-  (:require [keechma.controller :as controller]
-            [keechma.edb :as edb]
-            [keechma.ui-component :as ui]
-            [keechma.app-state :as app-state])
+  (:require [clojure.string :as str]
+            [entitydb.core :as edb]
+            [keechma.app-state :as app-state]
+            [keechma.controller :as controller]
+            [keechma.ui-component :as ui])
   (:require-macros [reagent.ratom :refer [reaction]]))
 
 (enable-console-print!)
@@ -30,12 +31,12 @@
   {:users {:id :id
            :relations {:favorite-users [:many :users]}}})
 
-(defrecord DataController []
-  controller/IController
-  (params [_ _] true)
-  (start [_ _ app-db]
-    ;; Inserts the data into the application state
-    (edb/insert-collection schema app-db :users :list (process-user-data user-data))))
+(defrecord DataController [])
+
+(defmethod controller/start DataController
+  [_ _ app-db]
+  ;; Inserts the data into the application state
+  (edb/insert-collection schema app-db :users :list (process-user-data user-data)))
 
 (defn user-list
   "Get the user list from the app state"
@@ -45,14 +46,14 @@
 
 (defn user-renderer
   "Renders one user and a list of it's favorite users.
-  
+
   `(:favorite-users user)` returns a function which will return
-  the list of favorite users for a user. This allows EntityDB to 
+  the list of favorite users for a user. This allows EntityDB to
   handle circular relations."
   [user]
   [:tr {:key (:id user)}
    [:td (:username user)]
-   [:td (clojure.string/join ", " (map #(:username %) ((:favorite-users user))))]])
+   [:td (str/join ", " (map #(:username %) ((:favorite-users user))))]])
 
 (defn user-list-renderer
   "Render the list of users. Each user is rendered by the `user-renderer`
@@ -77,9 +78,9 @@
 (def app-definition {:controllers {:data (->DataController)}
                      :subscriptions {:user-list user-list}
                      :components {:main user-list-component}
-          :html-element (.getElementById js/document "app")})
+                     :html-element (.getElementById js/document "app")})
 
-(defonce running-app (clojure.core/atom))
+(defonce running-app (clojure.core/atom nil))
 
 (defn start-app!
   "Helper function that starts the application."
@@ -97,9 +98,8 @@
 
 (restart-app!)
 
-
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+  )
